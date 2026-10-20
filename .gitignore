@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pylibs/
+.tmpdl/
+
+# Results that are cheap to regenerate
+results/runs/
+results/tune/
+results/*/result.json
+results/*/config.json
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

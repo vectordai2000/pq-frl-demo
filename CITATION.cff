@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the PQ-FRL paper."
+title: "PQ-FRL demo: privacy-preserving and quality-aware federated reinforcement learning for UAV-assisted edge computing"
+authors:
+  - family-names: Dai
+    given-names: Zifeng
+  - family-names: Xie
+    given-names: Hui
+  - family-names: Wei
+    given-names: Shengjun
+  - family-names: Hu
+    given-names: Changzhen
+repository-code: "https://github.com/vectordai2000/pq-frl-demo"
+license: MIT
+preferred-citation:
+  type: article
+  title: "PQ-FRL: A Privacy-Preserving and Quality-Aware Federated Reinforcement Learning for UAV-Assisted Edge Computing"
+  authors:
+    - family-names: Dai
+      given-names: Zifeng
+    - family-names: Xie
+      given-names: Hui
+    - family-names: Wei
+      given-names: Shengjun
+    - family-names: Hu
+      given-names: Changzhen
+  journal: "IEEE Internet of Things Journal"
+  year: 2026
+  doi: "10.1109/JIOT.2026.3695149"

@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PQ-FRL — privacy-preserving, quality-aware federated RL for UAV edge computing</title>
+<meta name="description" content="A compact, runnable demo of PQ-FRL: DDPG agents on UAVs, differential privacy on uploaded policy updates, and quality-aware federated aggregation.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="PQ-FRL demo — privacy-preserving federated RL for UAV edge computing">
+<meta property="og:description" content="A reduced-scale, CPU-runnable implementation of the method: DDPG agents, differentially-private uploads, quality-aware aggregation, six baselines and an animated rollout.">
+<meta property="og:image" content="assets/demo_convergence.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root {
+    --ink: #1c2229;
+    --muted: #5b6773;
+    --line: #e3e8ee;
+    --bg: #fbfcfd;
+    --card: #ffffff;
+    --accent: #c62828;
+    --accent-soft: #fdecea;
+    --blue: #1565c0;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { width: min(1040px, calc(100% - 40px)); margin: 0 auto; }
+  .topbar {
+    position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px);
+    background: rgba(251, 252, 253, .86); border-bottom: 1px solid var(--line);
+  }
+  .topbar .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; }
+  .brand { font-weight: 700; letter-spacing: .02em; color: var(--ink); }
+  .brand span { font-weight: 400; color: var(--muted); }
+  nav { display: flex; gap: 18px; align-items: center; font-size: 14px; }
+  nav a { color: var(--muted); }
+  #lang-toggle {
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer;
+  }
+  #lang-toggle:hover { border-color: #c9d2dc; }
+  header.hero { padding: 54px 0 8px; }
+  .eyebrow { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  h1 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.15; margin: 10px 0 14px; letter-spacing: -.01em; }
+  .lead { font-size: 18px; color: var(--muted); max-width: 780px; margin: 0 0 18px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+  .badge {
+    font-size: 12.5px; color: var(--muted); background: var(--card);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px;
+  }
+  figure { margin: 0; }
+  figure img { width: 100%; display: block; border-radius: var(--radius); border: 1px solid var(--line); background: #fff; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .hero-figure { max-width: 520px; margin: 0 auto 10px; }
+  .notice {
+    margin: 34px 0 8px; padding: 14px 18px; border-radius: var(--radius);
+    background: var(--accent-soft); border: 1px solid #f6cfcb; color: #7a2420; font-size: 14.5px;
+  }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 34px 0 10px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+  .stat b { display: block; font-size: 22px; letter-spacing: -.01em; }
+  .stat span { font-size: 13px; color: var(--muted); }
+  section { padding: 44px 0 6px; }
+  h2 { font-size: 24px; margin: 0 0 6px; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0 0 22px; max-width: 760px; }
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .card .tag { display: inline-block; font-size: 11.5px; color: var(--accent); font-weight: 700; letter-spacing: .06em; margin-bottom: 8px; }
+  .results-figure { max-width: 780px; margin: 0 auto 22px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin: 6px 0 18px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; }
+  tr.ours td { font-weight: 700; color: var(--accent); }
+  pre {
+    background: #12171d; color: #e7edf3; border-radius: var(--radius); padding: 18px 20px;
+    overflow-x: auto; font-size: 13.5px; line-height: 1.6;
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  pre code { color: inherit; }
+  ul.limits { color: var(--muted); font-size: 14.5px; padding-left: 20px; }
+  ul.limits li { margin-bottom: 7px; }
+  footer { margin-top: 48px; padding: 26px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13.5px; }
+  footer p { margin: 0 0 6px; }
+  @media (max-width: 760px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .cards, .two-col { grid-template-columns: 1fr; }
+    nav { gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <span class="brand">PQ-FRL <span>· demo</span></span>
+    <nav>
+      <a href="#how" data-en="Method" data-zh="方法">Method</a>
+      <a href="#results" data-en="Results" data-zh="结果">Results</a>
+      <a href="#run" data-en="Run" data-zh="运行">Run</a>
+      <a href="https://github.com/vectordai2000/pq-frl-demo">GitHub</a>
+      <a href="https://doi.org/10.1109/JIOT.2026.3695149" data-en="Paper" data-zh="论文">Paper</a>
+      <button id="lang-toggle" type="button">中文</button>
+    </nav>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow" data-en="Federated RL · Differential privacy · UAV edge computing"
+         data-zh="联邦强化学习 · 差分隐私 · 无人机边缘计算">Federated RL · Differential privacy · UAV edge computing</div>
+    <h1 data-en="Privacy-preserving, quality-aware federated reinforcement learning for UAV-assisted edge computing"
+        data-zh="面向无人机辅助边缘计算的隐私保护与质量感知联邦强化学习">
+      Privacy-preserving, quality-aware federated reinforcement learning for UAV-assisted edge computing
+    </h1>
+    <p class="lead" data-en="A compact, CPU-runnable demo of PQ-FRL: DDPG agents fly the UAVs, each round the actor update and the average reward are clipped and perturbed with calibrated Gaussian noise, and the ground station aggregates them with a softmax over the protected rewards."
+       data-zh="PQ-FRL 的精简可运行演示：每架无人机是 DDPG 智能体，每轮上传前对 actor 更新与平均奖励做裁剪与高斯加噪，地面站按受保护的奖励做 softmax 加权聚合。">
+      A compact, CPU-runnable demo of PQ-FRL: DDPG agents fly the UAVs, each round the actor update and the average reward are clipped and perturbed with calibrated Gaussian noise, and the ground station aggregates them with a softmax over the protected rewards.
+    </p>
+    <div class="badges">
+      <span class="badge">Python 3.9+</span>
+      <span class="badge">PyTorch</span>
+      <span class="badge">MIT</span>
+      <span class="badge" data-en="~1.7k lines" data-zh="约 1.7k 行">~1.7k lines</span>
+      <span class="badge" data-en="runs in ~1 min on CPU" data-zh="CPU 约 1 分钟跑完">runs in ~1 min on CPU</span>
+    </div>
+  </header>
+
+  <figure class="hero-figure">
+    <img src="assets/demo_rollout.gif" alt="Animated rollout of four UAVs serving ground users">
+    <figcaption data-en="Trained policy, deterministic rollout: four UAVs track hotspots, offload nearby tasks (lines), and drop deadline violations (red crosses). Cost is recomputed every slot."
+                data-zh="训练后的确定性 rollout：四架无人机跟随热点区域，将附近任务卸载（连线），超时任务被丢弃（红叉）。代价逐时隙实时计算。">
+      Trained policy, deterministic rollout: four UAVs track hotspots, offload nearby tasks (lines), and drop deadline violations (red crosses). Cost is recomputed every slot.
+    </figcaption>
+  </figure>
+
+  <div class="notice">
+    <b data-en="This is a reduced-scale demonstration, not the paper's simulation."
+       data-zh="这是一个精简规模的演示，不是论文的仿真代码。">This is a reduced-scale demonstration, not the paper's simulation.</b>
+    <span data-en="It is written from the paper's method section rather than derived from its simulation code, so the mechanism can be read and run in a minute. Numbers here are not comparable with the paper's figures."
+          data-zh="它依据论文方法一节重写，而非由论文的仿真代码派生，以便在一分钟内读懂并跑通。此处的数值与论文图表不可直接比较。">
+      It is written from the paper's method section rather than derived from its simulation code, so the mechanism can be read and run in a minute. Numbers here are not comparable with the paper's figures.
+    </span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b>6</b><span data-en="algorithms (ours + 5 baselines)" data-zh="算法（本文 + 5 个基线）">algorithms (ours + 5 baselines)</span></div>
+    <div class="stat"><b>4 UAVs / 20 users</b><span data-en="OFDMA uplink, rotary-wing energy model" data-zh="OFDMA 上行，旋翼能耗模型">OFDMA uplink, rotary-wing energy model</span></div>
+    <div class="stat"><b>2 releases / round</b><span data-en="actor update + protected average reward" data-zh="actor 更新 + 受保护的平均奖励">actor update + protected average reward</span></div>
+    <div class="stat"><b>0 extra data</b><span data-en="one scalar per client, no raw observations" data-zh="每客户端仅多 1 个标量，不上传原始观测">one scalar per client, no raw observations</span></div>
+  </div>
+
+  <section id="how">
+    <h2 data-en="How it works" data-zh="方法">How it works</h2>
+    <p class="sub" data-en="Four pieces, each in its own module. The federated loop follows Algorithm 1 of the paper."
+       data-zh="四个模块，各司其职；联邦主循环对应论文算法 1。">
+      Four pieces, each in its own module. The federated loop follows Algorithm 1 of the paper.
+    </p>
+    <div class="cards">
+      <div class="card">
+        <span class="tag">01 · SYSTEM MODEL</span>
+        <h3 data-en="UAV-MEC environment" data-zh="无人机-MEC 环境">UAV-MEC environment</h3>
+        <p data-en="LoS uplink with OFDMA bandwidth sharing, local/edge execution with a hard deadline, rotary-wing propulsion power, and the weighted cost (latency, energy, drop rate)."
+           data-zh="LoS 上行与 OFDMA 带宽共享、本地/边缘执行与硬截止时间、旋翼推进功率，以及时延/能耗/丢弃率的加权代价。">
+          LoS uplink with OFDMA bandwidth sharing, local/edge execution with a hard deadline, rotary-wing propulsion power, and the weighted cost (latency, energy, drop rate).
+        </p>
+      </div>
+      <div class="card">
+        <span class="tag">02 · LOCAL LEARNING</span>
+        <h3 data-en="DDPG over a mixed action space" data-zh="混合动作空间上的 DDPG">DDPG over a mixed action space</h3>
+        <p data-en="Each actor emits speed, heading, one offloading probability and one CPU share per candidate user. The offloading threshold is discrete, so a straight-through estimator carries the critic gradient back to the relaxed variable."
+           data-zh="每个 actor 输出速度、航向、对每个候选用户的卸载概率与 CPU 份额。卸载阈值是离散的，用直通估计器把 critic 梯度传回松弛变量。">
+          Each actor emits speed, heading, one offloading probability and one CPU share per candidate user. The offloading threshold is discrete, so a straight-through estimator carries the critic gradient back to the relaxed variable.
+        </p>
+      </div>
+      <div class="card">
+        <span class="tag">03 · PRIVACY</span>
+        <h3 data-en="Output-perturbation DP" data-zh="输出扰动差分隐私">Output-perturbation DP</h3>
+        <p data-en="Clipping plus calibrated Gaussian noise is applied once per round, at the upload boundary — on the actor update and on the average reward that drives the weighting."
+           data-zh="每轮只在离群点（上传边界）做一次裁剪 + 校准高斯加噪：作用于 actor 更新，以及用于加权的平均奖励。">
+          Clipping plus calibrated Gaussian noise is applied once per round, at the upload boundary — on the actor update and on the average reward that drives the weighting.
+        </p>
+      </div>
+      <div class="card">
+        <span class="tag">04 · AGGREGATION</span>
+        <h3 data-en="Quality-aware softmax" data-zh="质量感知 softmax">Quality-aware softmax</h3>
+        <p data-en="The server weights each client by a softmax over its protected reward, so noisy or poorly adapted updates are down-weighted without any extra information leaving the UAV."
+           data-zh="服务器按受保护奖励的 softmax 为客户端加权，从而压低噪声大或适配差的更新，且无人机端不额外泄露任何信息。">
+          The server weights each client by a softmax over its protected reward, so noisy or poorly adapted updates are down-weighted without any extra information leaving the UAV.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="results">
+    <h2 data-en="Illustrative results" data-zh="示意性结果">Illustrative results</h2>
+    <p class="sub" data-en="Demo preset, hotspot layout, two random seeds. The figure is generated by experiments.py; the table reports the same runs."
+       data-zh="demo 预设、热点布局、两个随机种子。图由 experiments.py 生成，表格为同一批运行的结果。">
+      Demo preset, hotspot layout, two random seeds. The figure is generated by experiments.py; the table reports the same runs.
+    </p>
+    <figure class="results-figure">
+      <img src="assets/demo_convergence.png" alt="Convergence curves for six algorithms">
+      <figcaption data-en="Converged system cost over 200 aggregation rounds (mean ± std over seeds). Lower is better."
+                  data-zh="200 轮聚合后的系统代价（跨种子均值 ± 标准差），越低越好。">
+        Converged system cost over 200 aggregation rounds (mean ± std over seeds). Lower is better.
+      </figcaption>
+    </figure>
+    <table>
+      <thead>
+        <tr>
+          <th data-en="Method" data-zh="方法">Method</th>
+          <th data-en="Privacy" data-zh="隐私">Privacy</th>
+          <th data-en="Aggregation" data-zh="聚合">Aggregation</th>
+          <th data-en="Converged cost" data-zh="收敛代价">Converged cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="ours"><td>PQ-FRL</td><td>DP</td><td data-en="protected-reward softmax" data-zh="奖励 softmax 加权">protected-reward softmax</td><td class="num">0.97 ± 0.04</td></tr>
+        <tr><td>DP-FedAvg</td><td>DP</td><td data-en="uniform" data-zh="等权">uniform</td><td class="num">1.05 ± 0.03</td></tr>
+        <tr><td>DP-FedRep</td><td>DP</td><td data-en="reputation-weighted" data-zh="信誉加权">reputation-weighted</td><td class="num">1.07 ± 0.01</td></tr>
+        <tr><td data-en="Local-only" data-zh="仅本地">Local-only</td><td>—</td><td data-en="none" data-zh="无">none</td><td class="num">1.16 ± 0.03</td></tr>
+      </tbody>
+    </table>
+    <p class="sub" style="font-size:13.5px;margin-top:-6px"
+       data-en="Demonstration-scale numbers from this repository; see the README for the parameter deviations and for what these runs do not establish."
+       data-zh="本仓库演示规模的数值；参数偏差与本结果不能证明什么，见 README。">
+      Demonstration-scale numbers from this repository; see the README for the parameter deviations and for what these runs do not establish.
+    </p>
+    <div class="two-col">
+      <figure>
+        <img src="assets/demo_weights.png" alt="Aggregation weights over rounds">
+        <figcaption data-en="Aggregation weights drift away from 1/N and follow the clients with a high protected reward."
+                    data-zh="聚合权重偏离 1/N，向受保护奖励高的客户端集中。">
+          Aggregation weights drift away from 1/N and follow the clients with a high protected reward.
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="assets/demo_components.png" alt="Latency, energy and task drop rate by algorithm">
+        <figcaption data-en="Component breakdown: at this operating point the difference between algorithms is mostly the task drop rate."
+                    data-zh="分量拆解：在该工作点上，算法差异主要体现在任务丢弃率。">
+          Component breakdown: at this operating point the difference between algorithms is mostly the task drop rate.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="run">
+    <h2 data-en="Run it" data-zh="运行">Run it</h2>
+    <p class="sub" data-en="Two commands: one training run, or the figure suite. Every run caches its history, so figures can be rebuilt offline."
+       data-zh="两条命令：单次训练，或整套图。每次运行都会缓存历史，可离线重建图表。">
+      Two commands: one training run, or the figure suite. Every run caches its history, so figures can be rebuilt offline.
+    </p>
+<pre><code>git clone https://github.com/vectordai2000/pq-frl-demo.git
+cd pq-frl-demo
+pip install -r requirements.txt
+
+python train.py --algo pq-frl                 # one run, ~1 min on a laptop CPU
+python experiments.py --figures convergence   # rebuild the convergence figure
+python make_animation.py                      # render the rollout GIF
+</code></pre>
+  </section>
+
+  <section id="limits">
+    <h2 data-en="What this is — and what it is not" data-zh="它是什么，不是什么">What this is — and what it is not</h2>
+    <ul class="limits">
+      <li data-en="A readable reference implementation of the mechanism: environment, DDPG/STE, DP upload, quality-aware aggregation, and five baselines."
+          data-zh="一份可读的机制参考实现：环境、DDPG/STE、DP 上传、质量感知聚合，以及五个基线。">A readable reference implementation of the mechanism: environment, DDPG/STE, DP upload, quality-aware aggregation, and five baselines.</li>
+      <li data-en="Not the paper's simulation: 200 rounds instead of 5000, two seeds instead of five, a 64-unit MLP instead of (256, 128)."
+          data-zh="不是论文的仿真：200 轮而非 5000 轮，2 个种子而非 5 个，(64) 隐层而非 (256, 128)。">Not the paper's simulation: 200 rounds instead of 5000, two seeds instead of five, a 64-unit MLP instead of (256, 128).</li>
+      <li data-en="The DP noise is scaled so that the mechanism stays visible on a small network; the strict calibration is one flag away."
+          data-zh="为让小网络仍可训练，DP 噪声做了缩放；如需教材式严格标定只是一个参数。">The DP noise is scaled so that the mechanism stays visible on a small network; the strict calibration is one flag away.</li>
+      <li data-en="The simplified channel has no inter-UAV interference, so the swarm-size trend of the paper is not reproduced here."
+          data-zh="简化信道没有无人机间干扰，因此论文的集群规模趋势在此未被复现。">The simplified channel has no inter-UAV interference, so the swarm-size trend of the paper is not reproduced here.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p data-en="Paper: Dai, Xie, Wei, Hu. “PQ-FRL: A Privacy-Preserving and Quality-Aware Federated Reinforcement Learning for UAV-Assisted Edge Computing.” IEEE Internet of Things Journal, 2026."
+       data-zh="论文：Dai, Xie, Wei, Hu. “PQ-FRL: A Privacy-Preserving and Quality-Aware Federated Reinforcement Learning for UAV-Assisted Edge Computing.” IEEE Internet of Things Journal, 2026.">
+      Paper: Dai, Xie, Wei, Hu. “PQ-FRL: A Privacy-Preserving and Quality-Aware Federated Reinforcement Learning for UAV-Assisted Edge Computing.” IEEE Internet of Things Journal, 2026.
+    </p>
+    <p><a href="https://doi.org/10.1109/JIOT.2026.3695149">DOI</a> ·
+       <a href="https://github.com/vectordai2000/pq-frl-demo">GitHub</a> ·
+       <a href="https://github.com/vectordai2000/pq-frl-demo#readme">README</a> ·
+       <a href="https://github.com/vectordai2000/pq-frl-demo/blob/main/LICENSE">MIT License</a></p>
+  </footer>
+
+</main>
+
+<script>
+  (function () {
+    var button = document.getElementById('lang-toggle');
+    function readLang() {
+      try { return localStorage.getItem('pqfrl-lang') || 'en'; } catch (e) { return 'en'; }
+    }
+    function saveLang(lang) {
+      try { localStorage.setItem('pqfrl-lang', lang); } catch (e) { /* file:// or private mode */ }
+    }
+    function apply(lang) {
+      document.querySelectorAll('[data-en]').forEach(function (el) {
+        el.textContent = el.getAttribute('data-' + lang);
+      });
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      button.textContent = lang === 'zh' ? 'EN' : '中文';
+      saveLang(lang);
+    }
+    apply(readLang());
+    button.addEventListener('click', function () {
+      apply(readLang() === 'zh' ? 'en' : 'zh');
+    });
+  }());
+</script>
+</body>
+</html>
